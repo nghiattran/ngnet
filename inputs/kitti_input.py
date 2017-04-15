@@ -150,8 +150,8 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                     jitter_scale_max=jitter_scale_max,
                     jitter_offset=jitter_offset)
 
-            if 'noise' in hypes:
-                im = create_noisy(hypes['noise'])
+            # if 'noise' in hypes:
+            #     im = create_noisy(hypes['noise'])
 
             pos_list = [rect for rect in anno.rects if rect.classID == 1]
             pos_anno = fake_anno(pos_list)
