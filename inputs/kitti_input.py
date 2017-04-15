@@ -19,7 +19,7 @@ from scipy.misc import imread, imresize
 
 import tensorflow as tf
 
-from utils.data_utils import (annotation_jitter, annotation_to_h5)
+from utils.data_utils import (annotation_jitter, annotation_to_h5, create_noisy)
 from utils.annolist import AnnotationLib as AnnoLib
 from utils.rect import Rect
 
@@ -150,6 +150,9 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                     jitter_scale_max=jitter_scale_max,
                     jitter_offset=jitter_offset)
 
+            if 'noise' in hypes:
+                im = create_noisy(hypes['noise'])
+
             pos_list = [rect for rect in anno.rects if rect.classID == 1]
             pos_anno = fake_anno(pos_list)
 
@@ -185,7 +188,7 @@ def create_queues(hypes, phase):
               [hypes['grid_height'], hypes['grid_width']],
               [hypes['grid_height'], hypes['grid_width'], 4],
               [hypes['grid_height'], hypes['grid_width']])
-    capacity = 30
+    capacity = hypes['batch_size'] * 5
     q = tf.FIFOQueue(capacity=capacity, dtypes=dtypes, shapes=shapes)
     return q
 

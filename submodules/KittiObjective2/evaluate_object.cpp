@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "mail.h"
 
@@ -17,10 +19,6 @@ using namespace std;
 /*=======================================================================
 STATIC EVALUATION PARAMETERS
 =======================================================================*/
-
-// holds the number of test images on the server
-const int32_t N_MAXIMAGES = 7518;
-const int32_t N_TESTIMAGES = 481;
 
 // easy, moderate and hard evaluation level
 enum DIFFICULTY{EASY=0, MODERATE=1, HARD=2};
@@ -119,7 +117,7 @@ vector<tDetection> loadDetections(string file_name, bool &compute_aos, bool &eva
     if (fscanf(fp, "%s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
                    str, &trash,    &trash,    &d.box.alpha,
                    &d.box.x1,   &d.box.y1, &d.box.x2, &d.box.y2,
-                   &trash,      &trash,    &trash,    &trash, 
+                   &trash,      &trash,    &trash,    &trash,
                    &trash,      &trash,    &trash,    &d.thresh )==16) {
       d.box.type = str;
       detections.push_back(d);
@@ -143,7 +141,6 @@ vector<tDetection> loadDetections(string file_name, bool &compute_aos, bool &eva
 }
 
 vector<tGroundtruth> loadGroundtruth(string file_name,bool &success) {
-
   // holds all ground truth (ignored ground truth is indicated by an index vector
   vector<tGroundtruth> groundtruth;
   FILE *fp = fopen(file_name.c_str(),"r");
@@ -158,7 +155,7 @@ vector<tGroundtruth> loadGroundtruth(string file_name,bool &success) {
     if (fscanf(fp, "%s %lf %d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
                    str, &g.truncation, &g.occlusion, &g.box.alpha,
                    &g.box.x1,   &g.box.y1,     &g.box.x2,    &g.box.y2,
-                   &trash,      &trash,        &trash,       &trash, 
+                   &trash,      &trash,        &trash,       &trash,
                    &trash,      &trash,        &trash )==15) {
       g.box.type = str;
       groundtruth.push_back(g);
@@ -267,18 +264,15 @@ void cleanData(CLASSES current_class, const vector<tGroundtruth> &gt, const vect
 
   // extract ground truth bounding boxes for current evaluation class
   for(int32_t i=0;i<gt.size(); i++){
-
     // only bounding boxes with a minimum height are used for evaluation
     double height = gt[i].box.y2 - gt[i].box.y1;
 
     // neighboring classes are ignored ("van" for "car" and "person_sitting" for "pedestrian")
     // (lower/upper cases are ignored)
     int32_t valid_class;
-
     // all classes without a neighboring class
     if(!strcasecmp(gt[i].box.type.c_str(), CLASS_NAMES[current_class].c_str()))
       valid_class = 1;
-
     // classes with a neighboring class
     else if(!strcasecmp(CLASS_NAMES[current_class].c_str(), "Pedestrian") && !strcasecmp("Person_sitting", gt[i].box.type.c_str()))
       valid_class = 0;
@@ -502,7 +496,7 @@ bool eval_class (FILE *fp_det, FILE *fp_ori, CLASSES current_class,const vector<
   vector< vector<tGroundtruth> > dontcare;            // index of dontcare areas, included in ground truth
 
   // for all test images do
-  for (int32_t i=0; i<N_TESTIMAGES; i++){
+  for (int32_t i=0; i<groundtruth.size(); i++){
 
     // holds ignored ground truth, ignored detections and dontcare areas for current frame
     vector<int32_t> i_gt, i_det;
@@ -529,7 +523,7 @@ bool eval_class (FILE *fp_det, FILE *fp_ori, CLASSES current_class,const vector<
   // compute TP,FP,FN for relevant scores
   vector<tPrData> pr;
   pr.assign(thresholds.size(),tPrData());
-  for (int32_t i=0; i<N_TESTIMAGES; i++){
+  for (int32_t i=0; i<groundtruth.size(); i++){
 
     // for all scores/recall thresholds do:
     for(int32_t t=0; t<thresholds.size(); t++){
@@ -581,11 +575,11 @@ void saveAndPlotPlots(string dir_name,string file_name,string obj_type,vector<do
   for (int32_t i=0; i<(int)N_SAMPLE_PTS; i++)
     fprintf(fp,"%f %f %f %f\n",(double)i/(N_SAMPLE_PTS-1.0),vals[0][i],vals[1][i],vals[2][i]);
   fclose(fp);
-  
+
   // create png + eps
   for (int32_t j=0; j<2; j++) {
 
-    // open file  
+    // open file
     FILE *fp = fopen((dir_name + "/" + file_name + ".gp").c_str(),"w");
 
     // save gnuplot instructions
@@ -596,7 +590,7 @@ void saveAndPlotPlots(string dir_name,string file_name,string obj_type,vector<do
       fprintf(fp,"set term postscript eps enhanced color font \"Helvetica\" 20\n");
       fprintf(fp,"set output \"%s.eps\"\n",file_name.c_str());
     }
-    
+
     // set labels and ranges
     fprintf(fp,"set size ratio 0.7\n");
     fprintf(fp,"set xrange [0:1]\n");
@@ -610,7 +604,7 @@ void saveAndPlotPlots(string dir_name,string file_name,string obj_type,vector<do
     // line width
     int32_t   lw = 5;
     if (j==0) lw = 3;
-   
+
     // plot error curve
     fprintf(fp,"plot ");
     fprintf(fp,"\"%s.txt\" using 1:2 title 'Easy' with lines ls 1 lw %d,",file_name.c_str(),lw);
@@ -661,21 +655,30 @@ bool eval(string path, string path_to_gt, Mail* mail){
 
   // for all images read groundtruth and detections
   mail->msg("Loading detections...");
-  for (int32_t i=0; i<N_MAXIMAGES; i++) {
+  DIR *dp = opendir(gt_dir.c_str());
+  if (dp == NULL) {
+    mail->msg("ERROR: Couldn't read: %s.", gt_dir.c_str());
+    return false;
+  }
+  int cnt = 0;
+  struct dirent *dirp;
+  while (dirp = readdir(dp)) {
+    string file_name = dirp->d_name;
 
-    // file name
-    char file_name[256];
-    sprintf(file_name,"%06d.txt",i);
+    // If current or parent directory, skip it
+    if(strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0 ) {
+      continue;
+    }
 
     if(!exists_test0(result_dir + "/" + file_name)) {
       continue;
     }
 
-
     // read ground truth and result poses
     bool gt_success,det_success;
     vector<tGroundtruth> gt   = loadGroundtruth(gt_dir + "/" + file_name,gt_success);
     vector<tDetection>   det  = loadDetections(result_dir + "/" + file_name, compute_aos, eval_car, eval_pedestrian, eval_cyclist,det_success);
+
     groundtruth.push_back(gt);
     detections.push_back(det);
 
@@ -689,7 +692,7 @@ bool eval(string path, string path_to_gt, Mail* mail){
       return false;
     }
   }
-  mail->msg("  done.");
+  closedir(dp);
 
   // holds pointers for result files
   FILE *fp_det=0, *fp_ori=0;
@@ -700,12 +703,14 @@ bool eval(string path, string path_to_gt, Mail* mail){
     if(compute_aos)
       fp_ori = fopen((result_dir + "/stats_" + CLASS_NAMES[CAR] + "_orientation.txt").c_str(),"w");
     vector<double> precision[3], aos[3];
+
     if(   !eval_class(fp_det,fp_ori,CAR,groundtruth,detections,compute_aos,precision[0],aos[0],EASY)
        || !eval_class(fp_det,fp_ori,CAR,groundtruth,detections,compute_aos,precision[1],aos[1],MODERATE)
        || !eval_class(fp_det,fp_ori,CAR,groundtruth,detections,compute_aos,precision[2],aos[2],HARD)){
       mail->msg("Car evaluation failed.");
       return false;
     }
+
     fclose(fp_det);
     saveAndPlotPlots(plot_dir,CLASS_NAMES[CAR] + "_detection",CLASS_NAMES[CAR],precision,0);
     if(compute_aos){
