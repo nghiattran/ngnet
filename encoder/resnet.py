@@ -25,6 +25,12 @@ def inference(hypes, images, train=True):
                                        name='is_training')
 
     layers = hypes['arch']['layers']
+    deep_feat = hypes['arch']['deep_feat'] if 'deep_feat' in hypes['arch'] else 'block4'
+    early_feat = hypes['arch']['early_feat'] if 'early_feat' in hypes['arch'] else 'block1'
+
+    assert early_feat in ['conv1', 'block1', 'block2', 'block3', 'block4']
+    assert deep_feat in ['block1', 'block2', 'block3', 'block4']
+    assert deep_feat > early_feat
 
     if layers == 50:
         resnet = resnet_v1.resnet_v1_50
@@ -38,17 +44,15 @@ def inference(hypes, images, train=True):
     with slim.arg_scope(resnet_v1.resnet_arg_scope(is_training)):
         logits, endpoint = resnet(images)
 
-    resnet_dict = {
-        'deep_feat': endpoint['resnet_v1_%d/block3' % (layers)],
-        'early_feat': endpoint['resnet_v1_%d/block4' % (layers)]
-    }
-
     if train:
         restore = tf.global_variables()
         hypes['init_function'] = _initalize_variables
         hypes['restore'] = restore
 
-    return resnet_dict
+    return {
+        'early_feat': endpoint['resnet_v1_%d/%s' % (layers, early_feat)],
+        'deep_feat': endpoint['resnet_v1_%d/%s' % (layers, deep_feat)]
+    }
 
 def _initalize_variables(hypes):
     if hypes['load_pretrained']:
@@ -62,8 +66,6 @@ def _initalize_variables(hypes):
         saver = tf.train.Saver(var_list=restore)
 
         layers = hypes['arch']['layers']
-
-        assert layers in [50, 101, 152]
 
         filename = checkpoint_fn(layers=layers)
 
