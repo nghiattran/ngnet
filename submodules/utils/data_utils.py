@@ -19,8 +19,8 @@ import skimage.util
 from collections import namedtuple
 
 
-def create_noisy(img, mode='speckle'):
-    return skimage.util.random_noise(img, mode=mode)
+def create_noisy(img, mode='speckle', seed=None):
+    return skimage.util.random_noise(img, mode=mode, seed=seed)
 
 def annotation_to_h5(H, a, cell_width, cell_height, max_len):
     region_size = H['region_size']

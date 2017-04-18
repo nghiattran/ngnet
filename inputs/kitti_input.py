@@ -140,9 +140,12 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                     im, (hypes["image_height"], hypes["image_width"]),
                     interp='cubic')
             if jitter:
-                jitter_scale_min = 0.9
-                jitter_scale_max = 1.1
-                jitter_offset = 16
+                jitter_scale_min = hypes['jitter_scale_min'] if 'jitter_scale_min' in hypes else 0.9
+                jitter_scale_max = hypes['jitter_scale_max'] if 'jitter_scale_max' in hypes else 1.1
+
+                assert jitter_scale_min < jitter_scale_max
+
+                jitter_offset = hypes['jitter_offset'] if 'jitter_offset' in hypes else 16
                 im, anno = annotation_jitter(
                     im, anno, target_width=hypes["image_width"],
                     target_height=hypes["image_height"],
@@ -150,8 +153,8 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                     jitter_scale_max=jitter_scale_max,
                     jitter_offset=jitter_offset)
 
-            # if 'noise' in hypes:
-            #     im = create_noisy(hypes['noise'])
+            if 'noise' in hypes:
+                im = create_noisy(hypes['noise'], hypes['solver']['rnd_seed'])
 
             pos_list = [rect for rect in anno.rects if rect.classID == 1]
             pos_anno = fake_anno(pos_list)
