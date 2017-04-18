@@ -1,8 +1,8 @@
 {
     "model": {
         "input_file": "../inputs/kitti_input.py",
-        "architecture_file" : "../encoder/resnet.py",
-        "objective_file" : "../decoder/new_fastBox.py",
+        "architecture_file" : "../encoder/inception_resnet.py",
+        "objective_file" : "../decoder/fastBox.py",
         "optimizer_file" : "../optimizer/generic_optimizer.py",
         "evaluator_file" : "../evals/kitti_eval.py"
     },
@@ -21,8 +21,6 @@
         "image_iter": 150000
     },
     "arch": {
-        "layers": 50,
-        "early_feat": "block1"
     },
     "path": ["../incl"],
     "solver": {
@@ -35,18 +33,14 @@
         "hungarian_iou": 0.35,
         "weights": "",
         "head_weights": [1.0, 0.1],
-        "max_steps": 150000,
-        "keep_prob": 0.4
+        "max_steps": 140000
     },
-    "jitter_scale_min": 0.8,
-    "jitter_scale_max": 1.2,
-    "jitter_offset": 16,
     "load_pretrained": true,
     "use_rezoom": true,
     "augment_level": 1,
     "use_mask": true,
     "biggest_box_px": 10000,
-    "early_feat_channels": 2048,
+    "early_feat_channels": 256,
     "rezoom_change_loss": "center",
     "rezoom_w_coords": [-0.25, 0, 0.25],
     "rezoom_h_coords": [-0.25, 0, 0.25],
@@ -62,6 +56,7 @@
     "clip_norm": 1.0,
     "num_inner_channel": 500,
     "num_classes": 2,
+    "wd": 5e-4,
     "detect_truck": false
 }
 

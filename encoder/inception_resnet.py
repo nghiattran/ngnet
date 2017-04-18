@@ -6,6 +6,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import logging
 from tensorflow.contrib.slim.python.slim.nets import resnet_v1
+from nets.inception_resnet_v2 import inception_resnet_v2_arg_scope, inception_resnet_v2
 
 
 def checkpoint_fn(version=1, layers=50):
@@ -24,35 +25,19 @@ def inference(hypes, images, train=True):
                                        dtype='bool',
                                        name='is_training')
 
-    layers = hypes['arch']['layers']
-    deep_feat = hypes['arch'].get('deep_feat', 'block4')
-    early_feat = hypes['arch'].get('early_feat', 'block1')
-
-    assert early_feat in ['conv1', 'block1', 'block2', 'block3', 'block4']
-    assert deep_feat in ['block1', 'block2', 'block3', 'block4']
-    assert deep_feat > early_feat
-
-    if layers == 50:
-        resnet = resnet_v1.resnet_v1_50
-    elif layers == 101:
-        resnet = resnet_v1.resnet_v1_101
-    elif layers == 152:
-        resnet = resnet_v1.resnet_v1_152
-    else:
-        logging.error('Resnet only has 50, 101, or 152 layers. Got', layers)
-        exit(1)
-
-    with slim.arg_scope(resnet_v1.resnet_arg_scope(is_training)):
-        logits, endpoints = resnet(images)
-
-    if train:
-        restore = tf.global_variables()
-        hypes['init_function'] = _initalize_variables
-        hypes['restore'] = restore
-
+    num_classes = 2
+    # images = tf.placeholder(tf.float32, shape=(3, 224, 224, 3))
+    with slim.arg_scope(inception_resnet_v2_arg_scope()):
+        logit, endpoints = inception_resnet_v2(images,
+                                               num_classes=num_classes,
+                                               is_training=is_training)
+    for key in endpoints:
+        print(key, endpoints[key].get_shape().as_list())
+    print(logit.get_shape().as_list())
+    exit(0)
     return {
-        'early_feat': endpoints['resnet_v1_%d/%s' % (layers, early_feat)],
-        'deep_feat': endpoints['resnet_v1_%d/%s' % (layers, deep_feat)]
+        'early_feat': endpoints['Mixed_5b'],
+        'deep_feat': endpoints['Conv2d_4a_3x3']
     }
 
 def _initalize_variables(hypes):
