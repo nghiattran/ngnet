@@ -21,7 +21,8 @@
         "image_iter": 150000
     },
     "arch": {
-        "layers": 101
+        "layers": 101,
+	"early_feat": "block1"
     },
     "path": ["../incl"],
     "solver": {
@@ -49,7 +50,7 @@
     "image_width": 1248,
     "grid_width": 39,
     "grid_height": 12,
-    "batch_size": 3,
+    "batch_size": 5,
     "tau": 0.35,
     "scale_down": 0.1,
     "focus_size": 1.8,
@@ -60,4 +61,3 @@
     "wd": 5e-4,
     "detect_truck": false
 }
-
