@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Author: Marvin Teichmann
+# Author: Nghia Tran
+# Edited from demo.py
 
 
 """
@@ -14,7 +15,7 @@ Utilizes: Trained KittiBox weights. If no logdir is given,
 pretrained weights will be downloaded and used.
 
 Usage:
-python demo.py --input_image data/demo.png [--output_image output_image]
+python video.py --input_image data/demo.png [--output_image output_image]
                 [--logdir /path/to/weights] [--gpus 0]
 
 
