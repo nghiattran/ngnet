@@ -2,7 +2,7 @@
     "model": {
         "input_file": "../inputs/kitti_input.py",
         "architecture_file" : "../encoder/resnet.py",
-        "objective_file" : "../decoder/fastBox.py",
+        "objective_file" : "../decoder/new_fastBox.py",
         "optimizer_file" : "../optimizer/generic_optimizer.py",
         "evaluator_file" : "../evals/kitti_eval.py"
     },
@@ -41,6 +41,8 @@
     "jitter_scale_min": 0.8,
     "jitter_scale_max": 1.2,
     "jitter_offset": 16,
+    "noise": "speckle",
+    "flip": true,
     "load_pretrained": true,
     "use_rezoom": true,
     "augment_level": 1,
@@ -64,4 +66,3 @@
     "num_classes": 2,
     "detect_truck": false
 }
-
