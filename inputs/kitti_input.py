@@ -138,6 +138,9 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
             anno.rects = rect_list
 
             im = scp.misc.imread(image_file)
+            if hypes.get('noise', False):
+                im = create_noisy(im, mode=hypes['noise'])
+
             if im.shape[2] == 4:
                 im = im[:, :, :3]
             if im.shape[0] != hypes["image_height"] or \
@@ -149,6 +152,10 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                 im = imresize(
                     im, (hypes["image_height"], hypes["image_width"]),
                     interp='cubic')
+
+            if hypes.get('flip', False) and random.random() < 0.5:
+                im, anno = _flip_image(im, anno)
+
             if jitter:
                 jitter_scale_min = hypes.get('jitter_scale_min', 0.9)
                 jitter_scale_max = hypes.get('jitter_scale_max', 1.1)
@@ -162,12 +169,6 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                     jitter_scale_min=jitter_scale_min,
                     jitter_scale_max=jitter_scale_max,
                     jitter_offset=jitter_offset)
-
-            if hypes.get('noise', False):
-                im = create_noisy(im, hypes['noise'], hypes['solver']['rnd_seed'])
-
-            if hypes.get('flip', False) and random.random() < 0.5:
-                im, anno = _flip_image(im, anno)
 
             pos_list = [rect for rect in anno.rects if rect.classID == 1]
             pos_anno = fake_anno(pos_list)
