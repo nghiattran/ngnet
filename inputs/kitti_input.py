@@ -138,7 +138,9 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
             anno.rects = rect_list
 
             im = scp.misc.imread(image_file)
-            if hypes.get('noise', False):
+
+            # Noise has to be created after loading image
+            if hypes.get('noise', False) and random.random() < 0.5:
                 im = create_noisy(im, mode=hypes['noise'])
 
             if im.shape[2] == 4:
@@ -153,6 +155,7 @@ def _load_kitti_txt(kitti_txt, hypes, jitter=False, random_shuffel=True):
                     im, (hypes["image_height"], hypes["image_width"]),
                     interp='cubic')
 
+            # If flip flag is set, flip image around y axis
             if hypes.get('flip', False) and random.random() < 0.5:
                 im, anno = _flip_image(im, anno)
 
