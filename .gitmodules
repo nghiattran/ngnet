@@ -4,3 +4,6 @@
 [submodule "submodules/tensorflow-fcn"]
 	path = submodules/tensorflow-fcn
 	url = https://github.com/MarvinTeichmann/tensorflow-fcn.git
+[submodule "submodules/vod-converter"]
+	path = submodules/vod-converter
+	url = https://github.com/nghiattran/vod-converter.git

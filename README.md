@@ -1,6 +1,6 @@
 # NgNet
 
-NgNet is a object detector based on [KittiBox](https://github.com/MarvinTeichmann/KittiBox).
+NgNet is a car detector based on [KittiBox](https://github.com/MarvinTeichmann/KittiBox).
 
 ## Comparision
 
@@ -42,10 +42,17 @@ Read [KittiBox README](https://github.com/nghiattran/ngnet/blob/master/KittiBox_
 ## Udacity-Didi Challenge
 
 Generate data from [Udacity CrowdAI and AUTTI](https://github.com/udacity/self-driving-car/tree/master/annotations)
-using [vod-converter](https://github.com/nghiattran/vod-converter). Note: this converter is a fork from
+using my version of [vod-converter](https://github.com/nghiattran/vod-converter) which is compatible with both Python 2 
+and 3. 
+
+Note: this converter is a fork from
 [umautobots vod-converter](https://github.com/umautobots/vod-converter) and it contains some changes to make it work
 for this repositoty.
 
 # Acknowledge
 
 This project started out as a fork of [KittiBox](https://github.com/MarvinTeichmann/KittiBox).
+
+Data convertion tool is a fork from [umautobots](https://github.com/umautobots)'s [vod-converter](https://github.com/umautobots/vod-converter)
+but has some minnor changes to work with Python 2 
+and 3.
