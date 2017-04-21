@@ -15,10 +15,9 @@ Utilizes: Trained KittiBox weights. If no logdir is given,
 pretrained weights will be downloaded and used.
 
 Usage:
-python video.py --input_image data/demo.png [--output_image output_image]
-                [--logdir /path/to/weights] [--gpus 0]
-
-
+usage: demo_images.py [-h] [--gpus GPUS] [--summary [SUMMARY]] [--nosummary]
+                      [--logdir LOGDIR] [--image_dir IMAGE_DIR] [--ext EXT]
+                      [--limit LIMIT] [--log [LOG]] [--nolog]
 """
 from __future__ import absolute_import
 from __future__ import division

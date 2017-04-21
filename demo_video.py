@@ -64,9 +64,9 @@ parser.add_argument('test_path', type=str, help='Path to test folder.')
 parser.add_argument('logdir', type=str, help='Path to logdir.')
 parser.add_argument('--save', '-s', type=str, default='', help='Save file.')
 
-def main(_):
-    tv_utils.set_gpus_to_use()
+def main():
     args = parser.parse_args()
+    tv_utils.set_gpus_to_use()
     logdir = args.logdir
 
     # Loading hyperparameters from logdir
@@ -148,4 +148,4 @@ def main(_):
     logging.info('Frequency: %.2f fps' % (cnt / time_taken))
 
 if __name__ == '__main__':
-    tf.app.run()
+    main()

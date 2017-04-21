@@ -6,33 +6,27 @@
 
 
 """
-Detects Cars in an image using KittiBox.
+Detects Cars in an imaged using KittiBox.
 
-Input: Image
-Output: Image (with Cars plotted in Green)
-
-Utilizes: Trained KittiBox weights. If no logdir is given,
-pretrained weights will be downloaded and used.
+Input:
+    test_path: path to folder contain images to predict.
+    logdir: Log directory for trained model
+Output:
+    A folder that contains txt files for bounding boxes in provided images
 
 Usage:
-python video.py --input_image data/demo.png [--output_image output_image]
-                [--logdir /path/to/weights] [--gpus 0]
-
-
+python kittisubmission.py test_path logdir
 """
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import json
 import logging
 import os
 import sys
-import imageio
-import collections
 
 # configure logging
-
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.INFO,
                     stream=sys.stdout)
@@ -44,6 +38,7 @@ import scipy.misc
 import tensorflow as tf
 import time
 import argparse
+from  evals.kitti_eval import write_rects
 
 sys.path.insert(1, 'incl')
 from utils import train_utils as kittibox_utils
@@ -66,14 +61,7 @@ parser.add_argument('logdir', type=str, help='Path to logdir.')
 parser.add_argument('--save', '-s', type=str, default='.', help='Save directory.')
 
 
-def write_rects(rects, filename):
-    with open(filename, 'w') as f:
-        for rect in rects:
-            string = "Car 0 1 0 %f %f %f %f 0 0 0 0 0 0 0 %f" % \
-                (rect.x1, rect.y1, rect.x2, rect.y2, rect.score)
-            print(string, file=f)
-
-def main(_):
+def main():
     tv_utils.set_gpus_to_use()
     args = parser.parse_args()
 
@@ -151,4 +139,4 @@ def main(_):
     logging.info('Frequency: %.2f fps' % (len(image_names) / time_taken))
 
 if __name__ == '__main__':
-    tf.app.run()
+    main()

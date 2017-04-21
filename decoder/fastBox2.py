@@ -173,6 +173,7 @@ def _build_rezoom_layer(hyp, rezoom_input, train):
         ip1 = tf.nn.relu(tf.matmul(delta_features, delta_weights1)) + delta_bias1
         if train:
             ip1 = tf.nn.dropout(ip1, hyp['solver'].get('keep_prob', 0.5))
+
         delta_confs_weights = tf.get_variable(
             'delta2', shape=[dim, hyp['num_classes']])
         delta_confs_bias = tf.get_variable(

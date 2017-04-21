@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Author: Nghia Tran
+
+
+"""
+Detects Visualize output bounding boxes on images
+
+Input: Image
+Output: Image (with Cars plotted in Green)
+
+Utilizes: Trained KittiBox weights. If no logdir is given,
+pretrained weights will be downloaded and used.
+
+Usage:
+usage: visualize.py [-h] [--groundtruth GROUNDTRUTH] [--threshold THRESHOLD]
+                    image_path outdir
+"""
+
 from __future__ import print_function
 
 from PIL import Image
@@ -8,7 +28,6 @@ import argparse
 import os
 import sys
 import logging
-import numpy as np
 
 sys.path.insert(1, 'incl')
 
