@@ -113,8 +113,13 @@ def handle_data(udacity_dec_dir, type):
     for file in os.listdir(src):
         image_src = os.path.join(converted_path, TRAINING_FOLDER, IMAGE_FOLDER, file)
         image_dst = os.path.join(udacity_dec_dir, TRAINING_FOLDER, IMAGE_FOLDER, file)
-        shutil.move(src=image_src,
-                    dst=image_dst)
+        shutil.move(src=image_src, dst=image_dst)
+
+    src = os.path.join(converted_path, TRAINING_FOLDER, LABEL_FOLDER)
+    for file in os.listdir(src):
+        label_src = os.path.join(converted_path, TRAINING_FOLDER, LABEL_FOLDER, file)
+        label_dst = os.path.join(udacity_dec_dir, TRAINING_FOLDER, LABEL_FOLDER, file)
+        shutil.move(src=label_src, dst=label_dst)
 
     new_data = []
     with open(os.path.join(converted_path, 'train.txt'), 'r') as f:
