@@ -46,7 +46,7 @@
     "augment_level": 1,
     "use_mask": true,
     "biggest_box_px": 10000,
-    "early_feat_channels": 2048,
+    "early_feat_channels": 256,
     "rezoom_change_loss": "center",
     "rezoom_w_coords": [-0.25, 0, 0.25],
     "rezoom_h_coords": [-0.25, 0, 0.25],

@@ -22,7 +22,7 @@
     },
     "arch": {
         "layers": 101,
-	"early_feat": "block1"
+	    "early_feat": "block1"
     },
     "path": ["../incl"],
     "solver": {
