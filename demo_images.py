@@ -6,29 +6,28 @@
 
 
 """
-Detects Cars in an image using KittiBox.
+Detects Cars in an video using KittiBox.
 
-Input: Image
-Output: Image (with Cars plotted in Green)
+Input: Video
+Output: Video (with Cars plotted in Green)
 
 Utilizes: Trained KittiBox weights. If no logdir is given,
 pretrained weights will be downloaded and used.
 
 Usage:
-usage: demo_images.py [-h] [--gpus GPUS] [--summary [SUMMARY]] [--nosummary]
-                      [--logdir LOGDIR] [--image_dir IMAGE_DIR] [--ext EXT]
-                      [--limit LIMIT] [--log [LOG]] [--nolog]
+python demo_video.py --input_image data/demo.png [--output_image output_image]
+                [--logdir /path/to/weights] [--gpus 0]
+
+
 """
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import json
 import logging
 import os
 import sys
 import imageio
-import collections
 
 # configure logging
 
@@ -42,9 +41,8 @@ import scipy as scp
 import scipy.misc
 import tensorflow as tf
 import time
-
-flags = tf.app.flags
-FLAGS = flags.FLAGS
+import cv2
+import argparse
 
 sys.path.insert(1, 'incl')
 from utils import train_utils as kittibox_utils
@@ -61,66 +59,17 @@ except ImportError:
     exit(1)
 
 
-flags.DEFINE_string('logdir', None,
-                    'Path to logdir.')
-flags.DEFINE_string('image_dir', None,
-                    'Directory contains images to apply KittiBox.')
-flags.DEFINE_string('ext', 'jpg',
-                    'File extension of all images.')
-flags.DEFINE_integer('limit', -1,
-                    'Number of images to process')
-flags.DEFINE_boolean('log', False,
-                     'Display logs or not')
+parser = argparse.ArgumentParser(description='Create summsion for Kitti')
+parser.add_argument('image_dir', type=str, help='Path to video.')
+parser.add_argument('logdir', type=str, help='Path to logdir.')
+parser.add_argument('--save', '-s', type=str, default='', help='Save file.')
+parser.add_argument('--limit', '-l', type=int, default=-1, help='Save file.')
+parser.add_argument('--framerate', '-f', type=int, default=10, help='Save file.')
 
-
-default_run = 'KittiBox_pretrained'
-weights_url = ("ftp://mi.eng.cam.ac.uk/"
-               "pub/mttt2/models/KittiBox_pretrained.zip")
-
-
-def maybe_download_and_extract(runs_dir):
-    logdir = os.path.join(runs_dir, default_run)
-
-    if os.path.exists(logdir):
-        # weights are downloaded. Nothing to do
-        return
-
-    if not os.path.exists(runs_dir):
-        os.makedirs(runs_dir)
-
-    import zipfile
-    download_name = tv_utils.download(weights_url, runs_dir)
-
-    logging.info("Extracting KittiBox_pretrained.zip")
-
-    zipfile.ZipFile(download_name, 'r').extractall(runs_dir)
-
-    return
-
-
-def main(_):
+def main():
+    args = parser.parse_args()
     tv_utils.set_gpus_to_use()
-
-    if FLAGS.image_dir is None:
-        logging.error("No image_dir was given.")
-        logging.info(
-            "Usage: python demo.py --image_dir data/ "
-            "[--logdir /path/to/weights] "
-            "[--gpus GPUs_to_use] ")
-        exit(1)
-
-    if FLAGS.logdir is None:
-        # Download and use weights from the MultiNet Paper
-        if 'TV_DIR_RUNS' in os.environ:
-            runs_dir = os.path.join(os.environ['TV_DIR_RUNS'],
-                                    'KittiBox')
-        else:
-            runs_dir = 'RUNS'
-        maybe_download_and_extract(runs_dir)
-        logdir = os.path.join(runs_dir, default_run)
-    else:
-        logging.info("Using weights found in {}".format(FLAGS.logdir))
-        logdir = FLAGS.logdir
+    logdir = args.logdir
 
     # Loading hyperparameters from logdir
     hypes = tv_utils.load_hypes_from_logdir(logdir, base_path='hypes')
@@ -134,9 +83,8 @@ def main(_):
     # Create tf graph and build module.
     with tf.Graph().as_default():
         # Create placeholder for input
-        image_pl = tf.placeholder(tf.float32)
+        image_pl = tf.placeholder(tf.float32, shape=(hypes["image_height"], hypes["image_width"], 3))
         image = tf.expand_dims(image_pl, 0)
-
         # build Tensorflow graph using the model from logdir
         prediction = core.build_inference_graph(hypes, modules,
                                                 image=image)
@@ -152,32 +100,40 @@ def main(_):
 
         logging.info("Weights loaded successfully.")
 
+    if args.save:
+        save_file = args.save
+    else:
+        save_file = 'video.mp4'
+
+    if os.path.isfile(save_file):
+        os.remove(save_file)
+
     # Get all images to make video
-    image_names = []
-    for file in os.listdir(FLAGS.image_dir):
-        if file.endswith(FLAGS.ext):
-            image_names.append(file)
-    image_names = image_names[:FLAGS.limit]
+    image_names =  sorted(os.listdir(args.image_dir))[:args.limit]
 
     if len(image_names) == 0:
         logging.error("No image found in given image_dir.")
         exit(1)
 
-    save_file = 'didi.mp4'
     start = time.time()
 
     if os.path.isfile(save_file):
         os.remove(save_file)
-    print(hypes["image_height"], hypes["image_width"])
+
     logging.info("Making video")
-    with imageio.get_writer(save_file, mode='I', fps=20) as writer:
+    with imageio.get_writer(save_file, mode='I', fps=args.framerate) as writer:
         for i, image_name in enumerate(image_names):
-            input_image = os.path.join(FLAGS.image_dir, image_name)
+            input_image = os.path.join(args.image_dir, image_name)
             # logging.info("Starting inference using %s as input %d/%d" % (input_image, i, len(image_names)))
 
             # Load and resize input image
-            image = scp.misc.imread(input_image)
-            image = scp.misc.imresize(image, (hypes["image_height"],
+            oimage = scp.misc.imread(input_image)
+
+            oshape = oimage.shape[:2]
+            rh = oshape[0] / float(hypes["image_height"])
+            rw = oshape[1] / float(hypes["image_width"])
+
+            image = scp.misc.imresize(oimage, (hypes["image_height"],
                                               hypes["image_width"]),
                                       interp='cubic')
             feed = {image_pl: image}
@@ -189,6 +145,11 @@ def main(_):
                                                              pred_confidences],
                                                             feed_dict=feed)
 
+            # np_pred_boxes[:, :, 0] *= rw
+            # np_pred_boxes[:, :, 2] *= rw
+            # np_pred_boxes[:, :, 1] *= rh
+            # np_pred_boxes[:, :, 3] *= rh
+
             # Apply non-maximal suppression
             # and draw predictions on the image
             threshold = 0.5
@@ -198,7 +159,9 @@ def main(_):
                 use_stitching=True, rnn_len=1,
                 min_conf=threshold, tau=hypes['tau'], color_acc=(0, 255, 0))
 
+            output_image = scp.misc.imresize(output_image, oshape, interp='cubic')
             writer.append_data(output_image)
+
     time_taken = time.time() - start
     logging.info('Video saved as %s' % save_file)
     logging.info('Number of images: %d' % len(image_names))
@@ -206,4 +169,5 @@ def main(_):
     logging.info('Frequency: %.2f fps' % (len(image_names) / time_taken))
 
 if __name__ == '__main__':
-    tf.app.run()
+    main()
+

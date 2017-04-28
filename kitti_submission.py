@@ -27,6 +27,8 @@ import os
 import sys
 
 # configure logging
+import errno
+
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.INFO,
                     stream=sys.stdout)
@@ -56,9 +58,10 @@ except ImportError:
 
 
 parser = argparse.ArgumentParser(description='Create summsion for Kitti')
-parser.add_argument('test_path', type=str, help='Path to test folder.')
+parser.add_argument('test_path', type=str, help='Path to test image_2 folder.')
 parser.add_argument('logdir', type=str, help='Path to logdir.')
-parser.add_argument('--save', '-s', type=str, default='.', help='Save directory.')
+parser.add_argument('--save', '-s', type=str, default='./submission/test_out', help='Save directory.')
+parser.add_argument('--threshold', '-t', type=float, default=0.5, help='Threshold.')
 
 
 def main():
@@ -66,8 +69,15 @@ def main():
     args = parser.parse_args()
 
     logdir = args.logdir
-    if not os.path.isdir(args.save):
-        logging.error('--save flag must be a directory.')
+
+    # http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+    try:
+        os.makedirs(args.save)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(args.save):
+            pass
+        else:
+            logging.error('--save flag must be a directory.')
 
     # Loading hyperparameters from logdir
     hypes = tv_utils.load_hypes_from_logdir(logdir, base_path='hypes')
@@ -100,7 +110,8 @@ def main():
         logging.info("Weights loaded successfully.")
 
     test_path = args.test_path
-    image_names = os.listdir(test_path).sort()
+    image_names = sorted(os.listdir(test_path))
+
     start = time.time()
     for i, image_name in enumerate(image_names):
         input_image = os.path.join(test_path, image_name)
@@ -121,12 +132,11 @@ def main():
 
         # Apply non-maximal suppression
         # and draw predictions on the image
-        threshold = 0.5
         output_image, rects = kittibox_utils.add_rectangles(
             hypes, [image], np_pred_confidences,
             np_pred_boxes, show_removed=False,
             use_stitching=True, rnn_len=1,
-            min_conf=threshold, tau=hypes['tau'], color_acc=(0, 255, 0))
+            min_conf=args.threshold, tau=hypes['tau'], color_acc=(0, 255, 0))
 
         test_file_name = image_name.split('.')[0] + '.txt'
         test_file = os.path.join(args.save, test_file_name)

@@ -378,14 +378,20 @@ def loss(hypes, decoded_logits, labels):
         tf.cast(tf.greater(confidences, 0), 'float32'), (outer_size, 1, 1))
 
     # danger zone
-    # residual = (true_boxes - pred_boxes) * boxes_mask
-    # boxes_loss = tf.reduce_sum(tf.abs(residual)) / outer_size * head[1]
+    # Implementation of IoU loss layer based on https://arxiv.org/pdf/1608.01471.pdf
+    X_ = (pred_boxes[:, :, 2] - pred_boxes[:, :, 0]) * (pred_boxes[:, :, 3] - pred_boxes[:, :, 1])
+    X = (true_boxes[:, :, 2] - true_boxes[:, :, 0]) * (true_boxes[:, :, 3] - true_boxes[:, :, 1])
 
-    pred_boxes_flat = tf.reshape(pred_boxes * boxes_mask, [-1, 4])
-    perm_truth_flat = tf.reshape(true_boxes, [-1, 4])
-    iou = train_utils.iou(train_utils.to_x1y1x2y2(pred_boxes_flat),
-                          train_utils.to_x1y1x2y2(perm_truth_flat))
-    boxes_loss = -tf.reduce_sum(tf.log(tf.maximum(iou, 1e-3))) / (tf.reduce_sum(boxes_mask) + 1e-6)
+    xA = tf.maximum(pred_boxes[:, :, 0], pred_boxes[:, :, 0])
+    yA = tf.maximum(pred_boxes[:, :, 1], pred_boxes[:, :, 1])
+    xB = tf.minimum(pred_boxes[:, :, 2], pred_boxes[:, :, 2])
+    yB = tf.minimum(pred_boxes[:, :, 3], pred_boxes[:, :, 3])
+
+    I = (xB - xA) * (yB - yA)
+    U = X + X_ - I
+    IoU = I/(U + 1e-6)
+
+    boxes_loss = -tf.log(tf.maximum(IoU, 1e-6)) * boxes_mask
 
     if hypes['use_rezoom']:
         # add rezoom loss

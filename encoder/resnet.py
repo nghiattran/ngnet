@@ -28,9 +28,10 @@ def inference(hypes, images, train=True):
     deep_feat = hypes['arch'].get('deep_feat', 'block4')
     early_feat = hypes['arch'].get('early_feat', 'block1')
 
-    assert early_feat in ['conv1', 'block1', 'block2', 'block3', 'block4']
-    assert deep_feat in ['block1', 'block2', 'block3', 'block4']
-    assert deep_feat > early_feat
+    blocks = ['block1', 'block2', 'block3', 'block4']
+
+    assert early_feat in blocks
+    assert deep_feat in blocks[1:]
 
     if layers == 50:
         resnet = resnet_v1.resnet_v1_50
@@ -44,6 +45,11 @@ def inference(hypes, images, train=True):
 
     with slim.arg_scope(resnet_v1.resnet_arg_scope(is_training)):
         logits, endpoints = resnet(images)
+
+        for name in blocks:
+            layer_name = 'resnet_v1_%d/%s' % (layers, name)
+            tf.summary.histogram('/%s_activation' % name, endpoints[layer_name])
+            tf.summary.scalar('/%s_sparsity' % name, tf.nn.zero_fraction(endpoints[layer_name]))
 
     if train:
         restore = tf.global_variables()

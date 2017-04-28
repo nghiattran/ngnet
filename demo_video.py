@@ -60,7 +60,7 @@ except ImportError:
 
 
 parser = argparse.ArgumentParser(description='Create summsion for Kitti')
-parser.add_argument('test_path', type=str, help='Path to test folder.')
+parser.add_argument('video', type=str, help='Path to video.')
 parser.add_argument('logdir', type=str, help='Path to logdir.')
 parser.add_argument('--save', '-s', type=str, default='', help='Save file.')
 
@@ -121,23 +121,23 @@ def main():
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = scp.misc.imresize(image, (hypes["image_height"],
                                               hypes["image_width"]))
-            feed = {image_pl: image}
-
-            # Run KittiBox model on image
-            pred_boxes = prediction['pred_boxes_new']
-            pred_confidences = prediction['pred_confidences']
-            (np_pred_boxes, np_pred_confidences) = sess.run([pred_boxes,
-                                                             pred_confidences],
-                                                            feed_dict=feed)
-
-            # Apply non-maximal suppression
-            # and draw predictions on the image
-            threshold = 0.5
-            output_image, _ = kittibox_utils.add_rectangles(
-                hypes, [image], np_pred_confidences,
-                np_pred_boxes, show_removed=False,
-                use_stitching=True, rnn_len=1,
-                min_conf=threshold, tau=hypes['tau'], color_acc=(0, 255, 0))
+            # feed = {image_pl: image}
+            #
+            # # Run KittiBox model on image
+            # pred_boxes = prediction['pred_boxes_new']
+            # pred_confidences = prediction['pred_confidences']
+            # (np_pred_boxes, np_pred_confidences) = sess.run([pred_boxes,
+            #                                                  pred_confidences],
+            #                                                 feed_dict=feed)
+            #
+            # # Apply non-maximal suppression
+            # # and draw predictions on the image
+            # threshold = 0.5
+            # output_image, _ = kittibox_utils.add_rectangles(
+            #     hypes, [image], np_pred_confidences,
+            #     np_pred_boxes, show_removed=False,
+            #     use_stitching=True, rnn_len=1,
+            #     min_conf=threshold, tau=hypes['tau'], color_acc=(0, 255, 0))
             writer.append_data(image)
     vidcap.release()
     cv2.destroyAllWindows()
