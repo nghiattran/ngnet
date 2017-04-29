@@ -40,10 +40,12 @@ import scipy.misc
 import tensorflow as tf
 import time
 import argparse
-from  evals.kitti_eval import write_rects
 
 sys.path.insert(1, 'incl')
+
 from utils import train_utils as kittibox_utils
+from  evals.kitti_eval import write_rects
+
 
 try:
     # Check whether setup was done correctly
@@ -65,8 +67,8 @@ parser.add_argument('--threshold', '-t', type=float, default=0.5, help='Threshol
 
 
 def main():
-    tv_utils.set_gpus_to_use()
     args = parser.parse_args()
+    tv_utils.set_gpus_to_use()
 
     logdir = args.logdir
 

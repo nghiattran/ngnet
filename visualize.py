@@ -8,10 +8,6 @@
 Detects Visualize output bounding boxes on images
 
 Input: Image
-Output: Image (with Cars plotted in Green)
-
-Utilizes: Trained KittiBox weights. If no logdir is given,
-pretrained weights will be downloaded and used.
 
 Usage:
 usage: visualize.py [-h] [--groundtruth GROUNDTRUTH] [--threshold THRESHOLD]
@@ -19,6 +15,8 @@ usage: visualize.py [-h] [--groundtruth GROUNDTRUTH] [--threshold THRESHOLD]
 """
 
 from __future__ import print_function
+
+import random
 
 from PIL import Image
 from PIL import ImageDraw
@@ -28,6 +26,8 @@ import argparse
 import os
 import sys
 import logging
+import matplotlib
+import numpy as np
 
 sys.path.insert(1, 'incl')
 
@@ -40,15 +40,19 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
 
 parser = argparse.ArgumentParser(description='Create summsion for Kitti')
 parser.add_argument('image_path', type=str, help='Path to test folder.')
-parser.add_argument('outdir', type=str, help='Path to output txt files.')
+parser.add_argument('outdirs', type=str, nargs = '*', help='Path to output txt files.')
 parser.add_argument('--groundtruth', '-g', type=str, default=None, help='Path to groundtruth txt files.')
 parser.add_argument('--threshold', '-t', type=float, default=0.5, help='Confidence threshold.')
 
 index = 0
-outdir = ''
-files = []
 car_pred = (0, 0, 255)
 car_groundtruth = (255, 0, 0)
+
+
+def create_proxy(color):
+    color = np.array(color) / 255.0
+    line = matplotlib.lines.Line2D([0,0], [10,10], color=color)
+    return line
 
 def read_rects(file):
     with open(file, 'r') as f:
@@ -81,36 +85,41 @@ def _draw_rect(draw, rect, color):
     rect_cords = ((left, top), (left, bottom),
                   (right, bottom), (right, top),
                   (left, top))
-    draw.line(rect_cords, fill=color, width=2)
+    draw.line(rect_cords, fill=color, width=3)
 
 def main():
-    global index, files, outdir
+    global index
     args = parser.parse_args()
     image_path = args.image_path
-    outdir = args.outdir
+    outdir = args.outdirs[0]
     files = sorted(os.listdir(outdir))
+
+    colors=[]
+    for i in range(len(args.outdirs)):
+        colors.append((random.randrange(0,255), random.randrange(0,255), random.randrange(0,255)))
 
     if len(files) == 0:
         logging.error('No files found at %s' % (outdir))
 
     def get_data(direction=1):
-        global index, files, outdir
+        global index
         index = (index + direction) % len(files)
         filename, _ = os.path.splitext(files[index])
         image = scp.misc.imread(os.path.join(image_path, filename + '.png'))
-
-        rects = read_rects(os.path.join(outdir, filename + '.txt'))
         im = Image.fromarray(image.astype('uint8'))
         draw = ImageDraw.Draw(im)
 
-        for rect in rects:
-            if rect.score >= args.threshold:
-                _draw_rect(draw, rect, car_pred)
+        for i, outdir in enumerate(args.outdirs):
+            rects = read_rects(os.path.join(outdir, filename + '.txt'))
 
-        if args.groundtruth is not None:
-            rects = read_rects(os.path.join(args.groundtruth, filename + '.txt'))
             for rect in rects:
-                _draw_rect(draw, rect, car_groundtruth)
+                if rect.score >= args.threshold:
+                    _draw_rect(draw, rect, colors[i])
+
+            if args.groundtruth is not None:
+                rects = read_rects(os.path.join(args.groundtruth, filename + '.txt'))
+                for rect in rects:
+                    _draw_rect(draw, rect, car_groundtruth)
 
         return im
 
@@ -132,6 +141,10 @@ def main():
     im = get_data()
     ax.imshow(im)
     ax.set_title('Press x to see next image, and z to see previous one.')
+
+
+    proxies = [create_proxy(colors[i]) for i in range(len(args.outdirs))]
+    ax.legend(proxies, args.outdirs, numpoints=1, markerscale=2)
     plt.show()
 
 if __name__ == '__main__':
